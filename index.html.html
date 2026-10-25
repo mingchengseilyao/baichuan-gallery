@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>百川归一体 · 云展厅</title>
+<style>
+  /* ========== 基础与变量 ========== */
+  :root {
+    --bg: #09090c;
+    --bg2: #111116;
+    --surface: rgba(255,255,255,.03);
+    --line: rgba(255,255,255,.09);
+    --line-gold: rgba(201,162,39,.25);
+    --text: #e8e6e1;
+    --muted: #94939e;
+    --gold: #c9a227;
+    --gold-light: #f2dfa0;
+    --bronze: #6b7f5e;
+    --serif: "Songti SC","STSong","Noto Serif SC",Georgia,"Times New Roman",serif;
+    --sans: -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; color-scheme: dark; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); line-height: 1.8;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  h1,h2,h3,h4 { font-family: var(--serif); font-weight: 700; margin: 0; line-height: 1.3; }
+  p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  /* ========== 动态背景与光晕 ========== */
+  .ambient-light {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(201,162,39,.06) 0, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(107,127,94,.06) 0, transparent 50%);
+  }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .25;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  /* ========== 导航 ========== */
+  nav {
+    position: fixed; inset: 0 0 auto 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 6vw; transition: .4s;
+    border-bottom: 1px solid transparent;
+  }
+  nav.solid {
+    padding: 14px 6vw; background: rgba(9,9,12,.82);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom-color: var(--line);
+  }
+  .logo { font-family: var(--serif); font-size: 1.15rem; letter-spacing: .12em; }
+  .logo span { color: var(--gold-light); margin: 0 .2em; }
+  .nav-links { display: flex; gap: 32px; list-style: none; margin: 0; padding: 0; font-size: .9rem; }
+  .nav-links a { color: var(--muted); transition: .3s; position: relative; }
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; bottom: -6px; width: 0; height: 1px;
+    background: var(--gold); transition: .35s;
+  }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* ========== 首屏 ========== */
+  .hero {
+    position: relative; z-index: 2; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 140px 6vw 80px;
+  }
+  .hero-inner { max-width: 1100px; margin: 0 auto; width: 100%; }
+  .eyebrow { font-size: .8rem; letter-spacing: .35em; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
+  .hero h1 { font-size: clamp(2.8rem, 7vw, 5.5rem); letter-spacing: -.01em; }
+  .hero h1 em { font-style: normal; color: var(--gold-light); }
+  .hero-lead { max-width: 640px; margin-top: 28px; color: var(--muted); font-size: 1.02rem; }
+  .hero-quote {
+    margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--line);
+    max-width: 720px; font-family: var(--serif); font-size: 1.1rem; color: rgba(255,255,255,.7); line-height: 2;
+  }
+  .scroll-hint { margin-top: 60px; font-size: .75rem; color: var(--muted); letter-spacing: .2em; display: flex; align-items: center; gap: 12px; }
+  .scroll-hint::before { content: ""; width: 40px; height: 1px; background: var(--line); }
+
+  /* ========== 时间轴导航 ========== */
+  .timeline-nav {
+    position: relative; z-index: 2; max-width: 1100px; margin: 0 auto;
+    padding: 40px 6vw 100px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+  }
+  .tl-item {
+    position: relative; padding: 24px 20px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    transition: .4s cubic-bezier(.2,.8,.2,1); cursor: pointer;
+  }
+  .tl-item:hover { border-color: var(--line-gold); background: rgba(201,162,39,.05); transform: translateY(-4px); }
+  .tl-item .era { font-family: var(--serif); font-size: 1.8rem; color: rgba(255,255,255,.15); transition: .4s; }
+  .tl-item:hover .era { color: var(--gold-light); }
+  .tl-item .name { font-size: .95rem; font-weight: 600; margin-top: 12px; }
+  .tl-item .desc { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+  /* ========== 展区通用 ========== */
+  .exhibit {
+    position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+    padding: 100px 6vw; border-top: 1px solid var(--line);
+  }
+  .exhibit-header { margin-bottom: 60px; }
+  .exhibit-num { font-size: .75rem; letter-spacing: .3em; color: var(--gold); text-transform: uppercase; display: block; margin-bottom: 16px; }
+  .exhibit-title { font-size: clamp(1.8rem, 4vw, 3rem); }
+  .exhibit-title span { color: var(--gold-light); }
+  .exhibit-sub { margin-top: 12px; color: var(--muted); font-size: .95rem; max-width: 640px; }
+
+  .exhibit-body { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; align-items: start; }
+  .exhibit-body.reverse { grid-template-columns: 1.1fr 1fr; }
+  .exhibit-body.reverse .image-col { order: 2; }
+  .exhibit-body.reverse .text-col { order: 1; }
+
+  /* 图片区域 */
+  .image-col { position: sticky; top: 100px; }
+  .img-frame {
+    position: relative; border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--line); background: #151515;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.7);
+  }
+  .img-frame img {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover;
+    filter: sepia(.15) contrast(1.05) brightness(.9);
+    transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .5s;
+  }
+  .img-frame:hover img { transform: scale(1.03); filter: sepia(.05) contrast(1.1) brightness(1); }
+  .img-caption {
+    padding: 16px 20px; background: rgba(0,0,0,.6);
+    border-top: 1px solid var(--line);
+    font-size: .8rem; color: var(--muted); display: flex; justify-content: space-between;
+  }
+  /* 图片加载失败的回退 */
+  .img-fallback {
+    width: 100%; aspect-ratio: 4/3;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #1a1814, #0d0c0a);
+    color: rgba(255,255,255,.3); font-family: var(--serif); text-align: center; padding: 20px;
+  }
+  .img-fallback strong { font-size: 1.2rem; margin-bottom: 8px; color: rgba(255,255,255,.5); }
+
+  /* 文字区域 */
+  .text-col { display: flex; flex-direction: column; gap: 32px; }
+  .info-block h3 {
+    font-size: 1.1rem; margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--line-gold); display: flex; align-items: center; gap: 10px;
+  }
+  .info-block h3::before { content: "◆"; font-size: .7rem; color: var(--gold); }
+  .info-block p, .info-block li { font-size: .92rem; color: #c4c3cd; line-height: 1.85; }
+  .info-block ul { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+
+  /* 五大价值网格 */
+  .values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .value-card {
+    padding: 20px; border-radius: 12px; background: var(--surface);
+    border: 1px solid var(--line); transition: .3s;
+  }
+  .value-card:hover { border-color: var(--line-gold); background: rgba(201,162,39,.04); }
+  .value-card h4 { font-size: .92rem; color: var(--gold-light); margin-bottom: 8px; font-family: var(--sans); font-weight: 600; }
+  .value-card p { font-size: .82rem; color: var(--muted); line-height: 1.7; }
+
+  /* 共同体联系高亮框 */
+  .connection-box {
+    padding: 24px 28px; border-radius: 14px;
+    background: linear-gradient(135deg, rgba(107,127,94,.08), rgba(201,162,39,.04));
+    border: 1px solid rgba(107,127,94,.3);
+  }
+  .connection-box h3 { font-size: 1.05rem; color: #8fb382; margin-bottom: 12px; border: none; padding: 0; }
+  .connection-box h3::before { display: none; }
+  .connection-box p { font-size: .92rem; color: #b8c4b3; }
+  .message-box {
+    padding: 24px 28px; border-radius: 14px;
+    background: rgba(255,255,255,.02); border-left: 3px solid var(--gold);
+  }
+  .message-box h3 { font-size: 1.05rem; color: var(--gold-light); margin-bottom: 12px; border: none; padding: 0; }
+  .message-box h3::before { display: none; }
+  .message-box p { font-size: .92rem; color: #c4c3cd; }
+
+  /* ========== 结语 ========== */
+  .outro {
+    position: relative; z-index: 2; max-width: 900px; margin: 0 auto;
+    padding: 120px 6vw 140px; text-align: center;
+  }
+  .outro h2 { font-size: clamp(1.8rem, 4vw, 2.8rem); margin-bottom: 28px; }
+  .outro h2 em { font-style: normal; color: var(--gold-light); }
+  .outro p { color: var(--muted); font-size: 1.02rem; max-width: 680px; margin: 0 auto 20px; }
+  .outro .final-line {
+    margin-top: 50px; font-family: var(--serif); font-size: 1.3rem;
+    color: var(--gold-light); letter-spacing: .1em; line-height: 2;
+  }
+
+  /* ========== 页脚 ========== */
+  footer {
+    position: relative; z-index: 2; border-top: 1px solid var(--line);
+    padding: 40px 6vw; display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; font-size: .8rem; color: var(--muted);
+  }
+
+  /* ========== 滚动显现 ========== */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ========== 响应式 ========== */
+  @media (max-width: 900px) {
+    .nav-links { display: none; }
+    .exhibit-body, .exhibit-body.reverse { grid-template-columns: 1fr; gap: 40px; }
+    .exhibit-body.reverse .image-col, .exhibit-body.reverse .text-col { order: unset; }
+    .image-col { position: static; }
+    .timeline-nav { grid-template-columns: 1fr 1fr; gap: 12px; padding-bottom: 60px; }
+    .values-grid { grid-template-columns: 1fr; }
+    .exhibit { padding: 70px 6vw; }
+  }
+  @media (max-width: 480px) {
+    .timeline-nav { grid-template-columns: 1fr; }
+    .hero { padding-top: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-light"></div>
+<div class="grain"></div>
+
+<!-- ========== 导航 ========== -->
+<nav id="nav">
+  <a class="logo" href="#top">百川<span>·</span>归一体</a>
+  <ul class="nav-links">
+    <li><a href="#han">汉 · 丝路初通</a></li>
+    <li><a href="#tang">唐 · 甥舅和盟</a></li>
+    <li><a href="#yuan">元 · 驿路一体</a></li>
+    <li><a href="#qing">清 · 疆域底定</a></li>
+  </ul>
+</nav>
+
+<!-- ========== 首屏 ========== -->
+<header class="hero" id="top">
+  <div class="hero-inner">
+    <p class="eyebrow reveal">云展厅 · 从秦汉到明清的共同体之路</p>
+    <h1 class="reveal">百川<em>归一体</em></h1>
+    <p class="hero-lead reveal">
+      两千多年间，统一不是历史的偶然，而是人心的所向、文明的必然。
+      本展厅以四件文物为线索，串联起从秦汉到明清，一个统一多民族国家如何“百川赴海，海纳百川”。
+    </p>
+    <div class="hero-quote reveal">
+      “任何形式的分裂，最终的结局只有统一。正是统一给了中国超大规模的文明体量、延续不断的文化认同和强大的组织动员能力。”
+    </div>
+    <div class="scroll-hint reveal">向下滚动，开启观展</div>
+  </div>
+</header>
+
+<!-- ========== 时间轴导航 ========== -->
+<div class="timeline-nav reveal">
+  <a href="#han" class="tl-item">
+    <div class="era">汉</div>
+    <div class="name">丝路初通</div>
+    <div class="desc">五星出东方利中国</div>
+  </a>
+  <a href="#tang" class="tl-item">
+    <div class="era">唐</div>
+    <div class="name">甥舅和盟</div>
+    <div class="desc">唐蕃会盟碑</div>
+  </a>
+  <a href="#yuan" class="tl-item">
+    <div class="era">元</div>
+    <div class="name">驿路一体</div>
+    <div class="desc">八思巴文虎符圆牌</div>
+  </a>
+  <a href="#qing" class="tl-item">
+    <div class="era">清</div>
+    <div class="name">疆域底定</div>
+    <div class="desc">御制平定准噶尔碑</div>
+  </a>
+</div>
+
+<main>
+
+  <!-- ==================== 第一展区：汉 ==================== -->
+  <section class="exhibit" id="han">
+    <div class="exhibit-header reveal">
+      <span class="exhibit-num">01 / 第一展区</span>
+      <h2 class="exhibit-title">汉 · 丝路初通</h2>
+      <p class="exhibit-sub">一件中原宫廷织锦出现在西域精绝贵族的墓葬中，证明大一统打通了中原与边疆的联系。</p>
+    </div>
+
+    <div class="exhibit-body reveal">
+      <div class="image-col">
+        <div class="img-frame">
+          <!-- 真实的文物图片（来自维基共享资源），失败时回退到古风占位图 -->
+          <img src="images/han.jpg" 
+               alt="五星出东方利中国织锦护臂" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="img-fallback" style="display:none;">
+            <strong>五星出东方利中国</strong>
+            <span>汉代织锦护臂 · 新疆尼雅遗址出土</span>
+            <span style="font-size:.75rem; margin-top:8px;">（图片加载失败，请检查网络或替换本地图片）</span>
+          </div>
+          <div class="img-caption">
+            <span>“五星出东方利中国”锦护臂</span>
+            <span>东汉 · 新疆维吾尔自治区博物馆藏</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-col">
+        <div class="info-block">
+          <h3>基本信息</h3>
+          <ul>
+            <li><strong>是什么：</strong>汉代五重平纹经锦护臂，射箭时保护手臂的用具。长18.5厘米，宽12.5厘米。</li>
+            <li><strong>哪个时期：</strong>东汉。1995年出土于新疆和田地区民丰县尼雅遗址（古精绝国），首批禁止出国（境）展览文物、国家一级文物。</li>
+            <li><strong>用途：</strong>射箭护臂。同墓出土弓、箭、箭箙等物，可确认其实际功能。</li>
+            <li><strong>铭文含义：</strong>“五星”指金、木、水、火、土五大行星；“中国”当时指黄河中下游的中原地区。整句是汉代星占吉语，意为五星汇聚东方天穹，于中原军国大事有利。</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h3>五大价值分析</h3>
+          <div class="values-grid">
+            <div class="value-card">
+              <h4>历史价值</h4>
+              <p>实证汉代对西域的有效管辖。织锦为中原宫廷织造，赏赐给精绝贵族，是丝绸之路沿线政治隶属与物资流动的直接物证。也是新疆发现年代最早的带有“中国”字样的文物。</p>
+            </div>
+            <div class="value-card">
+              <h4>文化价值</h4>
+              <p>融合阴阳五行、天文星占与祥瑞神兽文化，把天文、哲学、艺术浓缩于方寸之间；代表汉代蜀锦最高工艺水平，是“瑞应德化”思想的艺术化表达。</p>
+            </div>
+            <div class="value-card">
+              <h4>生态价值</h4>
+              <p>尼雅地处塔克拉玛干沙漠腹地，不利于植桑养蚕。蜀锦原产四川，经丝绸之路长途转运抵达西域，是汉代长距离贸易网络与跨生态区域物资调配能力的实物证据。</p>
+            </div>
+            <div class="value-card">
+              <h4>学术价值</h4>
+              <p>为研究汉代纺织技术、丝绸之路贸易史、西域城邦与中原的政治经济联系提供一手实物；可与《史记·天官书》的星占记载互证。</p>
+            </div>
+            <div class="value-card" style="grid-column: 1 / -1;">
+              <h4>选品理由</h4>
+              <p>它是整个展览的<strong>起点</strong>。一件中原宫廷织物出现在西域精绝贵族的墓葬中，以最直观的方式证明：大一统不只是疆域的划线，更是文化理念、物资技术与身份认同的跨区域流动。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="message-box">
+          <h3>这件文物传达了什么</h3>
+          <p>这件织锦跨越千里出现在西域，证明秦汉大一统格局打通了中原与边疆的联系。大一统王朝不只是疆域的统一，更是文化、物资、思想的跨区域流动；边疆族群接纳中原文化理念，中原也吸纳西域物产文化。</p>
+        </div>
+
+        <div class="connection-box">
+          <h3>与中华民族共同体的联系</h3>
+          <p>汉朝大一统之下，中原汉族与西域各民族交往交流交融。这件文物证明，早在两千年前，边疆民众和中原已经共享一套文化观念与符号体系。各族人民共同开拓疆域、共同发展商贸文化，为多元一体格局奠定了最初的实物根基。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 第二展区：唐 ==================== -->
+  <section class="exhibit" id="tang">
+    <div class="exhibit-header reveal">
+      <span class="exhibit-num">02 / 第二展区</span>
+      <h2 class="exhibit-title">唐 · 甥舅和盟</h2>
+      <p class="exhibit-sub">大一统不只有武力统一，还有和平共处、文化互认，各民族可以在同一个中华文明框架下共生。</p>
+    </div>
+
+    <div class="exhibit-body reverse reveal">
+      <div class="image-col">
+        <div class="img-frame">
+          <img src="images/tang.jpg" 
+               alt="唐蕃会盟碑" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="img-fallback" style="display:none;">
+            <strong>唐蕃会盟碑</strong>
+            <span>立于拉萨大昭寺门前</span>
+            <span style="font-size:.75rem; margin-top:8px;">（图片加载失败，请检查网络或替换本地图片）</span>
+          </div>
+          <div class="img-caption">
+            <span>唐蕃会盟碑（长庆会盟碑）</span>
+            <span>唐 · 立于拉萨大昭寺门前</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-col">
+        <div class="info-block">
+          <h3>基本信息</h3>
+          <ul>
+            <li><strong>是什么：</strong>又称“长庆会盟碑”“甥舅和盟碑”，唐长庆三年（823年）吐蕃赞普为纪念长庆元年至二年唐蕃会盟而立于拉萨大昭寺门前。</li>
+            <li><strong>哪个时期：</strong>唐（公元823年）。</li>
+            <li><strong>用途：</strong>纪功与盟誓碑刻。碑阳汉藏对照镌刻盟文，碑阴藏文记述唐蕃友好历史，碑侧刻双方参与会盟官员名单。</li>
+            <li><strong>盟文核心：</strong>“舅甥二主，商议社稷如一，结立大和盟约，永无沦替”，并申明“彼此不为寇敌，不举兵革”。</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h3>五大价值分析</h3>
+          <div class="values-grid">
+            <div class="value-card">
+              <h4>历史价值</h4>
+              <p>汉藏民族友好交往的实物见证。记录唐蕃结束长期战争、达成和平盟约，此后双方纷争基本停止，边境趋于安定；同时实证文成公主、金城公主入藏和亲所奠定的甥舅姻亲关系。</p>
+            </div>
+            <div class="value-card">
+              <h4>文化价值</h4>
+              <p>碑上汉藏双语铭文并存，是研究古藏文、汉藏语言接触的珍贵语料；碑文文笔庄重，是唐代重要盟誓文献；千余年来矗立大昭寺前，已成为汉藏“和同为一家”的文化记忆载体。</p>
+            </div>
+            <div class="value-card">
+              <h4>生态价值</h4>
+              <p>唐蕃古道穿越青藏高原，茶马互市、使节往还、和亲队伍在这条生态条件严酷的通道上持续流动。碑刻所凝固的和平秩序，是高原与中原之间在物资互补、生态依存基础上形成的长期交换关系在政治层面的确认。</p>
+            </div>
+            <div class="value-card">
+              <h4>学术价值</h4>
+              <p>法国藏学家戴密微盛誉其为“目前人们所知道的有关亚洲最重要的碑铭资料”；汉藏双语铭文可与中原史书互相对照，是研究唐代吐蕃历史、唐蕃边界与古代民族关系的一手原始史料。</p>
+            </div>
+            <div class="value-card" style="grid-column: 1 / -1;">
+              <h4>选品理由</h4>
+              <p>它是整个展览的<strong>转折点</strong>。如果说汉代织锦证明的是“大一统打通了联系”，唐蕃会盟碑证明的则是“大一统可以以和平盟约的方式维系”。它把“统一”从军事征服的单一叙事中解放出来，展示了文化互认与政治妥协在共同体建构中的关键作用。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="message-box">
+          <h3>这件文物传达了什么</h3>
+          <p>魏晋南北朝虽政权分立，但开启大规模民族交融；隋唐重建大一统，秉持包容的天下观。唐蕃会盟碑表明：大一统不只有武力统一，还有和平共处、文化互认，各民族可以在同一个中华文明框架下共生。</p>
+        </div>
+
+        <div class="connection-box">
+          <h3>与中华民族共同体的联系</h3>
+          <p>隋唐大一统推动各民族深度交融。汉藏两族订立盟约，“和同为一家”，体现的是不同民族对中华文明框架的共同认同。各民族在交往中加深情感联结，汇聚进中华民族共同体的长河。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 第三展区：元 ==================== -->
+  <section class="exhibit" id="yuan">
+    <div class="exhibit-header reveal">
+      <span class="exhibit-num">03 / 第三展区</span>
+      <h2 class="exhibit-title">元 · 驿路一体</h2>
+      <p class="exhibit-sub">大一统国家能够把草原民族、高原民族、中原民众纳入同一套国家制度之中。</p>
+    </div>
+
+    <div class="exhibit-body reveal">
+      <div class="image-col">
+        <div class="img-frame">
+          <img src="images/yuan.jpg" 
+               alt="元代八思巴文虎符圆牌" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="img-fallback" style="display:none;">
+            <strong>八思巴文虎符圆牌</strong>
+            <span>元代官方符牌 · 甘肃省博物馆藏</span>
+            <span style="font-size:.75rem; margin-top:8px;">（图片加载失败，请检查网络或替换本地图片）</span>
+          </div>
+          <div class="img-caption">
+            <span>元代八思巴文虎符圆牌</span>
+            <span>元 · 甘肃省博物馆藏</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-col">
+        <div class="info-block">
+          <h3>基本信息</h3>
+          <ul>
+            <li><strong>是什么：</strong>元代官方符牌，铁铅合金质地，牌面嵌银质八思巴文。铭文意为“大汗圣旨所到之处，众民必须敬畏之”。</li>
+            <li><strong>哪个时期：</strong>元代。八思巴文是忽必烈命国师八思巴以藏文字母为基础创制的“蒙古新字”，可拼写蒙、汉、藏、梵等多种语言。</li>
+            <li><strong>用途：</strong>元代驿传制度中的通行凭证。使者持此牌可在全国驿站快速通行，传递军政急务；因元朝疆域辽阔，此类符牌甚至可通行蒙古四大汗国，被学者称为“国际通行证”。</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h3>五大价值分析</h3>
+          <div class="values-grid">
+            <div class="value-card">
+              <h4>历史价值</h4>
+              <p>元代驿站与行政制度的实物证据。印证了元朝依靠驿站系统在庞大疆域内传递政令军情、保障国家治理的能力；此牌直接见证了元代中央政令在西藏的传达与执行，为中央政府对西藏行使直接管辖权留下了珍贵实物证据。</p>
+            </div>
+            <div class="value-card">
+              <h4>文化价值</h4>
+              <p>八思巴文是中国古代少有的以统一文字拼写多民族语言的系统性尝试，体现了元朝试图以一套文字体系覆盖多语言帝国的治理理念；铁胎嵌银、浮雕虎纹的工艺，继承了先秦以来的符信文化传统。</p>
+            </div>
+            <div class="value-card">
+              <h4>生态价值</h4>
+              <p>虎符圆牌关联的是一张覆盖欧亚的驿站交通网络。这套制度得以运转的前提，是对不同生态区域——草原、绿洲、高原、农耕区——之间交通线的系统整合。符牌本身虽小，却是跨生态治理能力的一个制度节点。</p>
+            </div>
+            <div class="value-card">
+              <h4>学术价值</h4>
+              <p>为研究元代政治制度、军事符牌等级、驿站运行机制提供了标准器；八思巴文铭文同时也是研究元代多民族语言文字使用状况的直接材料。</p>
+            </div>
+            <div class="value-card" style="grid-column: 1 / -1;">
+              <h4>选品理由</h4>
+              <p>它是展览中<strong>空间跨度最大</strong>的一件。汉唐两件文物处理的是中原与西域、中原与高原的关系，这枚符牌则把“共同体”的制度半径扩展到了欧亚尺度的驿站网络之中。它证明：大一统国家不只是“把不同民族放在同一片疆域里”，更是“把不同民族编入同一套可运作的制度之中”。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="message-box">
+          <h3>这件文物传达了什么</h3>
+          <p>宋元时期多政权并立，但文化交融从未中断；元朝完成空前大一统，建立覆盖多民族的国家治理体系。这枚虎符代表的是：大一统国家能够把草原民族、高原民族、中原民众纳入同一套国家制度之中。</p>
+        </div>
+
+        <div class="connection-box">
+          <h3>与中华民族共同体的联系</h3>
+          <p>元朝把广袤边疆纳入统一国家版图，不同民族共同在统一政权下生产生活。各族人民共同参与国家交通、行政体系的建设与运行，进一步加深了中华民族多元一体格局，是“百川汇流入大一统王朝”的制度化体现。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 第四展区：清 ==================== -->
+  <section class="exhibit" id="qing">
+    <div class="exhibit-header reveal">
+      <span class="exhibit-num">04 / 第四展区</span>
+      <h2 class="exhibit-title">清 · 疆域底定</h2>
+      <p class="exhibit-sub">维护国家统一，是各个民族共同的责任。无论哪个民族，都认同大一统国家，共同守护祖国疆域。</p>
+    </div>
+
+    <div class="exhibit-body reverse reveal">
+      <div class="image-col">
+        <div class="img-frame">
+          <img src="images/qing.jpg" 
+               alt="御制平定准噶尔告成太学碑" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="img-fallback" style="display:none;">
+            <strong>御制平定准噶尔告成太学碑</strong>
+            <span>清乾隆二十年 · 北京国子监藏</span>
+            <span style="font-size:.75rem; margin-top:8px;">（图片加载失败，请检查网络或替换本地图片）</span>
+          </div>
+          <div class="img-caption">
+            <span>御制平定准噶尔告成太学碑</span>
+            <span>清 · 北京国子监/孔庙藏</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-col">
+        <div class="info-block">
+          <h3>基本信息</h3>
+          <ul>
+            <li><strong>是什么：</strong>乾隆皇帝为纪念平定准噶尔之乱胜利而亲撰碑文的纪功碑。碑文以满、汉、蒙、藏四种文字刻写。</li>
+            <li><strong>哪个时期：</strong>清乾隆二十年（1755年）。</li>
+            <li><strong>用途：</strong>纪功与政治宣示。原碑立于北京国子监（太学），意在向天下读书人宣告西北一统的功业，把边疆事务纳入儒学教化与天下秩序的叙事之中。</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h3>五大价值分析</h3>
+          <div class="values-grid">
+            <div class="value-card">
+              <h4>历史价值</h4>
+              <p>记录清朝历经康雍乾三代最终平定准噶尔分裂势力、将西域稳固纳入版图的重大史实；乾隆亲撰碑文可与《清实录》《平定准噶尔方略》互证，是研究清代西北边疆史与民族治理的原始文献。</p>
+            </div>
+            <div class="value-card">
+              <h4>文化价值</h4>
+              <p>满、汉、蒙、藏四体文字同刻一碑，是清代“多民族文字并用”治理理念的物质化表达；碑文反驳“西域荒远不必治理”的旧观点，塑造了清代全新的“中华”疆域观。</p>
+            </div>
+            <div class="value-card">
+              <h4>生态价值</h4>
+              <p>平定准噶尔之后，清朝在西北边疆建立起相对稳定的治理秩序，这为天山南北绿洲—草原交错带的农牧业生产、商路通行与人口安顿提供了政治前提。碑体本身直面风沙侵蚀，其保护史也是一部边疆文物与自然环境相互作用的记录。</p>
+            </div>
+            <div class="value-card">
+              <h4>学术价值</h4>
+              <p>碑文满汉合璧（格登碑另存四体文字），是研究清代多民族文字行政实践、御制碑刻制度、边疆纪功礼仪的珍贵样本；御笔楷书与螭首龟趺形制，也是清代碑刻书法与礼制艺术的代表。</p>
+            </div>
+            <div class="value-card" style="grid-column: 1 / -1;">
+              <h4>选品理由</h4>
+              <p>它是整个展览的<strong>收束之作</strong>。前三件文物分别证明了“联系”“盟约”“制度”，这块碑则把它们统一到一个明确的结论上：维护国家统一，是各个民族共同的责任。四体文字同刻一石，本身就是“共同书写中国历史”的微缩景观。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="message-box">
+          <h3>这件文物传达了什么</h3>
+          <p>明清持续巩固多民族大一统。这块石碑告诉我们：维护国家统一，是各个民族共同的责任。无论哪个民族，都认同大一统国家，共同守护祖国疆域。</p>
+        </div>
+
+        <div class="connection-box">
+          <h3>与中华民族共同体的联系</h3>
+          <p>清代大一统把众多民族整合在统一疆域之内。满、汉、蒙、藏文字同刻一碑，代表各民族共同书写中国历史、共同守护国家统一；中华民族共同体的凝聚力在这一制度与符号的双重整合中进一步强化。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ========== 结语 ========== -->
+<section class="outro reveal">
+  <h2>百川赴海，海纳百川</h2>
+  <p>从尼雅沙漠中的一方织锦，到拉萨大昭寺前的一块盟碑，从一枚穿行欧亚驿路的虎符，到一通四体合刻的御碑——四件文物，四种“共同体”的发生方式：<strong>流动、盟誓、制度、共守</strong>。</p>
+  <p>它们共同回答了一个问题：中华民族共同体不是凭空建构的观念，而是两千年间在丝路上、在盟坛上、在驿道上、在碑石上一再被实践、被确认、被铭刻的历史过程。</p>
+  <div class="final-line">
+    “正因这份生生不息的凝聚力，<br>中华文明才能历尽劫波而弦歌不辍，<br>最终在新时代汇成民族复兴的浩荡长河。”
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 百川归一体 · 云展厅</span>
+  <span>从秦汉到明清，一个统一多民族国家的诞生</span>
+</footer>
+
+<script>
+  // ========== 导航栏滚动变色 ==========
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('solid', window.scrollY > 40);
+  }, { passive: true });
+
+  // ========== 滚动渐显 ==========
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // ========== 鼠标光晕 ==========
+  const light = document.querySelector('.ambient-light');
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth) * 100;
+    const y = (e.clientY / window.innerHeight) * 100;
+    light.style.background = `
+      radial-gradient(circle at ${x}% ${y}%, rgba(201,162,39,.08) 0, transparent 45%),
+      radial-gradient(circle at ${100-x}% ${100-y}%, rgba(107,127,94,.06) 0, transparent 50%)
+    `;
+  }, { passive: true });
+</script>
+
+</body>
+</html>
